@@ -12,6 +12,16 @@ interface ModelPrediction {
   explanation?: string;
 }
 
+interface CustomPrediction {
+  prediction: string;
+  confidence: number;
+  points: number;
+  basePoints: number;
+  streakBonus: number;
+  currentStreak: number;
+  category: string;
+}
+
 type ModelType = 'custom' | 'gemini';
 
 const CLASS_MAPPING: Record<string, string> = {
@@ -56,7 +66,7 @@ export default function ModelSelection() {
     geminiPrediction: string;
   }>();
 
-  const customPrediction: ModelPrediction = JSON.parse(params.customPrediction);
+  const customPrediction: CustomPrediction = JSON.parse(params.customPrediction);
   const geminiPrediction: ModelPrediction = JSON.parse(params.geminiPrediction);
 
   const handleModelSelect = (prediction: ModelPrediction, model: ModelType) => {
@@ -68,6 +78,32 @@ export default function ModelSelection() {
         imageUri: params.imageUri
       }
     });
+  };
+
+  const renderPointsInfo = (customPrediction: CustomPrediction) => {
+    return (
+      <View style={styles.pointsContainer}>
+        <Text style={styles.pointsTitle}>Points Earned</Text>
+        <View style={styles.pointsBreakdown}>
+          <Text style={styles.pointsText}>
+            Base Points: {customPrediction.basePoints}
+          </Text>
+          <Text style={styles.streakBonusText}>
+            Streak Bonus: +{customPrediction.streakBonus}
+          </Text>
+          <Text style={styles.totalPointsText}>
+            Total: {customPrediction.points}
+          </Text>
+        </View>
+        {customPrediction.currentStreak > 1 && (
+          <View style={styles.streakContainer}>
+            <Text style={styles.streakText}>
+              🔥 {customPrediction.currentStreak} Day Streak!
+            </Text>
+          </View>
+        )}
+      </View>
+    );
   };
 
   return (
@@ -141,6 +177,8 @@ export default function ModelSelection() {
           </Pressable>
         </View>
       </View>
+
+      {renderPointsInfo(customPrediction)}
     </View>
   );
 }
@@ -257,5 +295,47 @@ const styles = StyleSheet.create({
     color: '#666666',
     fontSize: 14,
     fontWeight: '500',
+  },
+  pointsContainer: {
+    backgroundColor: '#F0F9F0',
+    padding: 15,
+    borderRadius: 10,
+    marginVertical: 10,
+  },
+  pointsTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#1A1A1A',
+    marginBottom: 10,
+  },
+  pointsBreakdown: {
+    marginBottom: 10,
+  },
+  pointsText: {
+    fontSize: 16,
+    color: '#666',
+    marginBottom: 5,
+  },
+  streakBonusText: {
+    fontSize: 16,
+    color: '#4CAF50',
+    marginBottom: 5,
+  },
+  totalPointsText: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#1A1A1A',
+  },
+  streakContainer: {
+    backgroundColor: '#FFE0B2',
+    padding: 10,
+    borderRadius: 5,
+    marginTop: 10,
+  },
+  streakText: {
+    fontSize: 16,
+    color: '#E65100',
+    textAlign: 'center',
+    fontWeight: '600',
   },
 }); 

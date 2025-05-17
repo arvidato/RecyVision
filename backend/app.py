@@ -11,7 +11,9 @@ import numpy as np
 import google.generativeai as genai
 import os
 from dotenv import load_dotenv
-
+from torchvision.transforms import v2
+from torchvision.models.feature_extraction import create_feature_extractor, get_graph_node_names
+from torchvision import transforms as torchvision_transforms
 # Load environment variables
 load_dotenv()
 
@@ -28,41 +30,63 @@ except Exception as e:
 app = Flask(__name__)
 CORS(app)
 
-# Define your model
 class WasteClassificationModel(nn.Module):
     def __init__(self):
         super().__init__()
         self.mobnet = mobilenet_v3_small(weights=MobileNet_V3_Small_Weights.IMAGENET1K_V1)
-        self.mobnet.classifier = nn.Identity()
-        self.bn1 = nn.BatchNorm2d(576, momentum=0.1)
-        self.conv1 = nn.Conv2d(576, 300, 3, padding=1)
-        self.bn2 = nn.BatchNorm2d(300, momentum=0.1)
-        self.pool = nn.AdaptiveAvgPool2d((6, 6))
-        self.dropout = nn.Dropout(0.5)
-        self.fc1 = nn.Linear(300 * 6 * 6, 30)
+        train_nodes, eval_nodes = get_graph_node_names(self.mobnet)
+        self.feature_extraction = create_feature_extractor(self.mobnet,return_nodes={'features.12': 'mob_feature'})
+        self.conv1 = nn.Conv2d(576,300,3)
+        #self.conv2 = nn.Conv2d(300,150, 3)
+        self.fc1 = nn.Linear(10800,30)
+        #self.fc2 = nn.Linear(1000, 30)
+        self.dr = nn.Dropout()
 
-        # Initialize the final layer with smaller weights
-        nn.init.xavier_uniform_(self.fc1.weight, gain=0.1)
-        nn.init.zeros_(self.fc1.bias)
-
-    def forward(self, x):
-        if x.dim() == 3:
-            x = x.unsqueeze(0)
-        x = self.mobnet.features(x)
-        x = self.bn1(x)
-        x = F.relu(x)
-        x = self.conv1(x)
-        x = self.bn2(x)
-        x = F.relu(x)
-        x = self.pool(x)
+    def forward(self,x):
+        feature_layer = self.feature_extraction(x)['mob_feature']
+        x = F.relu(self.conv1(feature_layer))
+        #x = F.relu(self.conv2(x))
         x = x.flatten(start_dim=1)
-        x = self.dropout(x)
-        x = self.fc1(x)
-        return x
+        x = self.dr(x)
+        #x = F.relu(self.fc1(x))
+        #x = F.relu(self.fc2(x))
+        output = self.fc1(x)
+        return output
+# Define your model
+# class WasteClassificationModel(nn.Module):
+#     def __init__(self):
+#         super().__init__()
+#         self.mobnet = mobilenet_v3_small(weights=MobileNet_V3_Small_Weights.IMAGENET1K_V1)
+#         self.mobnet.classifier = nn.Identity()
+#         self.bn1 = nn.BatchNorm2d(576, momentum=0.1)
+#         self.conv1 = nn.Conv2d(576, 300, 3, padding=1)
+#         self.bn2 = nn.BatchNorm2d(300, momentum=0.1)
+#         self.pool = nn.AdaptiveAvgPool2d((6, 6))
+#         self.dropout = nn.Dropout(0.5)
+#         self.fc1 = nn.Linear(300 * 6 * 6, 30)
+
+#         # Initialize the final layer with smaller weights
+#         nn.init.xavier_uniform_(self.fc1.weight, gain=0.1)
+#         nn.init.zeros_(self.fc1.bias)
+
+#     def forward(self, x):
+#         if x.dim() == 3:
+#             x = x.unsqueeze(0)
+#         x = self.mobnet.features(x)
+#         x = self.bn1(x)
+#         x = F.relu(x)
+#         x = self.conv1(x)
+#         x = self.bn2(x)
+#         x = F.relu(x)
+#         x = self.pool(x)
+#         x = x.flatten(start_dim=1)
+#         x = self.dropout(x)
+#         x = self.fc1(x)
+#         return x
 
 # Initialize and load model
 waste_model = WasteClassificationModel()
-checkpoint_path = "mobilenet_transfer_learning_checkpoint.pth"
+checkpoint_path = "val_acc_best.pt"
 checkpoint = torch.load(checkpoint_path, map_location="cpu")
 
 # Print checkpoint keys and shapes
@@ -75,7 +99,7 @@ if "model_state_dict" in checkpoint:
             print(f"Checkpoint {key} stats: min={value.min().item():.3f}, max={value.max().item():.3f}, mean={value.mean().item():.3f}")
 
 # Load state dict with strict=False to handle any minor mismatches
-waste_model.load_state_dict(checkpoint["model_state_dict"], strict=False)
+waste_model.load_state_dict(checkpoint["model_state_dict"])
 waste_model.eval()
 
 # Verify model parameters
@@ -93,9 +117,14 @@ with torch.no_grad():
 
 # Preprocessing
 transform = transforms.Compose([
-    transforms.Resize(size=(256, 256)),
-    transforms.ToTensor(),
-    transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])  # ImageNet normalization
+    v2.ColorJitter(brightness=0.5, contrast=0.5, saturation=0.2),
+    v2.RandomAffine(degrees=5, translate=(0.1, 0.1), scale=(0.8, 1.3),
+                    interpolation=torchvision_transforms.InterpolationMode.BILINEAR),
+    v2.Resize(size=(256, 256)),
+    v2.GaussianBlur(kernel_size=(7, 13), sigma=(0.1, 0.2)),
+    v2.PILToTensor(),
+    v2.ToDtype(torch.float32),
+    v2.Normalize(mean=(0.5, 0.5, 0.5), std=(0.5, 0.5, 0.5))
 ])
 
 # Define class mapping
@@ -655,15 +684,17 @@ def predict():
         img_array = np.array(image)
         print(f"Image array shape: {img_array.shape}")
         print(f"Image array min/max: {img_array.min()}/{img_array.max()}")
-        
+
+
         tensor = transform(image).unsqueeze(0)
         print(f"\nPreprocessed tensor shape: {tensor.shape}")
         print(f"Preprocessed tensor min/max: {tensor.min().item():.3f}/{tensor.max().item():.3f}")
         print(f"Preprocessed tensor mean/std: {tensor.mean().item():.3f}/{tensor.std().item():.3f}")
-
+        y_preds = []
         # Predict
         with torch.no_grad():
             outputs = waste_model(tensor)
+
             print("\nRaw model outputs (logits):")
             print(outputs[0].tolist())
             

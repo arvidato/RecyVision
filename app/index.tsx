@@ -1,8 +1,10 @@
-import { Text, View, Image, TouchableOpacity, Dimensions, ScrollView } from 'react-native';
+import { Text, View, Image, TouchableOpacity, Dimensions, ScrollView, StyleSheet } from 'react-native';
 import { Link, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { icons } from "@/constants/icons";
 import Calendar from '../components/Calendar';
+import { Ionicons } from '@expo/vector-icons';
+import { UserStats } from '../components/UserStats';
 
 // Get screen dimensions
 const { width, height } = Dimensions.get('window');
@@ -11,6 +13,18 @@ const { width, height } = Dimensions.get('window');
 const getResponsiveSize = (baseSize: number) => {
     return Math.round((baseSize * height) / 812); // 812 is iPhone X height
 };
+
+const styles = StyleSheet.create({
+    section: {
+        marginBottom: 12,
+    },
+    sectionTitle: {
+        fontSize: 24,
+        fontWeight: 'bold',
+        color: '#1A1A1A',
+        marginBottom: 12,
+    },
+});
 
 export default function Index() {
     const router = useRouter();
@@ -45,16 +59,56 @@ export default function Index() {
 
             {/* Main Content */}
             <ScrollView className="flex-1">
-                <View style={{ padding: getResponsiveSize(20) }}>
-                    <Text style={{
-                        fontSize: getResponsiveSize(24),
-                        fontWeight: 'bold',
-                        color: '#1A1A1A',
-                        marginBottom: getResponsiveSize(16),
-                    }}>
-                        Your Recycling Progress
-                    </Text>
-                    <Calendar />
+                <View style={{ padding: getResponsiveSize(12) }}>
+                    <View style={styles.section}>
+                        <Text style={styles.sectionTitle}>Your Recycling Progress</Text>
+                        <Calendar />
+                    </View>
+
+                    <UserStats />
+
+                    {/* Leaderboard Button */}
+                    <View>
+                        <TouchableOpacity 
+                            onPress={() => router.push('/leaderboard')}
+                            style={{
+                                flexDirection: 'row',
+                                alignItems: 'center',
+                                backgroundColor: '#F0F9F0',
+                                padding: getResponsiveSize(12),
+                                borderRadius: getResponsiveSize(10),
+                                marginTop: getResponsiveSize(12),
+                            }}
+                        >
+                            <View style={{
+                                width: getResponsiveSize(40),
+                                height: getResponsiveSize(40),
+                                borderRadius: getResponsiveSize(20),
+                                backgroundColor: '#82C46B',
+                                justifyContent: 'center',
+                                alignItems: 'center',
+                                marginRight: getResponsiveSize(15),
+                            }}>
+                                <Ionicons name="trophy" size={24} color="white" />
+                            </View>
+                            <View style={{ flex: 1 }}>
+                                <Text style={{
+                                    fontSize: getResponsiveSize(16),
+                                    fontWeight: '600',
+                                    color: '#1A1A1A',
+                                }}>
+                                    View Leaderboard
+                                </Text>
+                                <Text style={{
+                                    fontSize: getResponsiveSize(14),
+                                    color: '#666',
+                                }}>
+                                    See top recyclers in your area
+                                </Text>
+                            </View>
+                            <Ionicons name="chevron-forward" size={24} color="#82C46B" />
+                        </TouchableOpacity>
+                    </View>
                 </View>
             </ScrollView>
 

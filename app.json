@@ -8,6 +8,9 @@
     "scheme": "myapp",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
+    "extra": {
+      "localIP": "10.18.18.193"
+    },
     "ios": {
       "supportsTablet": true,
       "infoPlist": {

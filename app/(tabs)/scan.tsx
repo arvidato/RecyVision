@@ -15,6 +15,12 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { recordScanEvent } from "../../services/scanEvents";
 import { getRecyclingInstructions } from "../../services/recyclingInstructions";
 import { useRouter } from 'expo-router';
+import { config } from '../config';
+import { pointsSystem, RecyclableItem } from '../../services/pointsSystem';
+import { leaderboardService } from '../../services/leaderboard';
+import { streakService } from '../../services/streakService';
+import { userSettingsService } from '../../services/userSettings';
+import { uniqueItemsService } from '../../services/uniqueItemsService';
 
 interface Prediction {
   prediction: string;
@@ -110,8 +116,8 @@ export default function App() {
 
   const handleCheck = async () => {
     if (!uri) return;
-
     setIsProcessing(true);
+
     try {
       const formData = new FormData();
       const filename = uri.split('/').pop() || 'photo.jpg';
@@ -124,8 +130,60 @@ export default function App() {
         type: type
       } as any);
 
-      // First try the custom model
-      const customResponse = await fetch('http://10.18.18.193:5001/predict', {
+      // First try Gemini
+      let geminiData;
+      try {
+        const geminiResponse = await fetch(`${config.API_URL}${config.API_ENDPOINTS.PREDICT_GEMINI}`, {
+          method: 'POST',
+          body: formData,
+          headers: { 'Content-Type': 'multipart/form-data' }
+        });
+
+        if (geminiResponse.ok) {
+          geminiData = await geminiResponse.json();
+          
+          // Get user settings for ID and name
+          const userSettings = await userSettingsService.getUserSettings();
+          const userId = userSettings.userId;
+          
+          // Get points for the predicted item
+          const itemType = geminiData.prediction as RecyclableItem;
+          const basePoints = pointsSystem.getPointsForItem(itemType);
+          
+          // Get streak bonus
+          const { streakBonus, currentStreak } = await streakService.updateStreak(userId);
+          
+          const totalPoints = basePoints + streakBonus;
+          
+          // Add points to leaderboard
+          await leaderboardService.addPoints(userId, totalPoints, userSettings.name);
+          
+          // Track unique item
+          await uniqueItemsService.addUniqueItem(userId, itemType);
+          
+          // If we got a valid Gemini response, navigate directly to recycling tips
+          router.push({
+            pathname: '/recycling-tips',
+            params: {
+              prediction: JSON.stringify({
+                prediction: geminiData.prediction,
+                confidence: geminiData.confidence || 1,
+                explanation: geminiData.explanation,
+                points: totalPoints,
+                category: pointsSystem.getCategoryForItem(itemType)
+              }),
+              model: 'gemini',
+              imageUri: uri
+            }
+          });
+          return;
+        }
+      } catch (geminiError) {
+        console.warn('Gemini error:', geminiError);
+      }
+
+      // If Gemini failed, try the custom model
+      const customResponse = await fetch(`${config.API_URL}${config.API_ENDPOINTS.PREDICT}`, {
         method: 'POST',
         body: formData,
         headers: { 'Content-Type': 'multipart/form-data' }
@@ -137,47 +195,55 @@ export default function App() {
 
       const customData = await customResponse.json();
 
-      // Then try Gemini
-      let geminiData;
-      try {
-        const geminiResponse = await fetch('http://10.18.18.193:5001/predict-gemini', {
-          method: 'POST',
-          body: formData,
-          headers: { 'Content-Type': 'multipart/form-data' }
-        });
+      // Update leaderboard with points and streak bonus
+      const predictedClass = customData.prediction;
+      console.log('Raw prediction:', predictedClass);
+      
+      // Map the prediction to our class names
+      const itemType = CLASS_MAPPING[predictedClass] as RecyclableItem;
+      console.log('Mapped item type:', itemType);
+      
+      const basePoints = pointsSystem.getPointsForItem(itemType);
+      console.log('Base points:', basePoints);
+      
+      // Get user settings for ID and name
+      const userSettings = await userSettingsService.getUserSettings();
+      const userId = userSettings.userId;
+      console.log('User ID:', userId);
+      
+      // Get streak bonus
+      const { streakBonus, currentStreak } = await streakService.updateStreak(userId);
+      console.log('Streak bonus:', streakBonus, 'Current streak:', currentStreak);
+      
+      const totalPoints = basePoints + streakBonus;
+      console.log('Total points:', totalPoints);
+      
+      // Add points to leaderboard with user's name
+      await leaderboardService.addPoints(userId, totalPoints, userSettings.name);
+      console.log('Points added to leaderboard');
 
-        if (!geminiResponse.ok) {
-          console.warn('Gemini prediction failed, continuing with custom model only');
-          geminiData = {
-            prediction: customData.prediction,
-            confidence: customData.confidence,
-            explanation: 'Gemini model is currently unavailable'
-          };
-        } else {
-          geminiData = await geminiResponse.json();
-        }
-      } catch (geminiError) {
-        console.warn('Gemini error:', geminiError);
-        geminiData = {
-          prediction: customData.prediction,
-          confidence: customData.confidence,
-          explanation: 'Gemini model is currently unavailable'
-        };
-      }
+      // Track unique item
+      await uniqueItemsService.addUniqueItem(userId, itemType);
+      console.log('Unique item tracked');
 
-      // Navigate to model selection page
+      // Navigate to model selection page with custom model results
       router.push({
         pathname: '/model-selection',
         params: {
           imageUri: uri,
           customPrediction: JSON.stringify({
             prediction: customData.prediction,
-            confidence: customData.confidence || 1
+            confidence: customData.confidence || 1,
+            points: totalPoints,
+            basePoints: basePoints,
+            streakBonus: streakBonus,
+            currentStreak: currentStreak,
+            category: pointsSystem.getCategoryForItem(itemType)
           }),
           geminiPrediction: JSON.stringify({
-            prediction: geminiData.prediction,
-            confidence: geminiData.confidence || 1,
-            explanation: geminiData.explanation
+            prediction: customData.prediction,
+            confidence: customData.confidence || 1,
+            explanation: 'Gemini model is currently unavailable'
           })
         }
       });
@@ -291,21 +357,27 @@ export default function App() {
   };
 
   const renderCamera = () => (
-    <CameraView style={styles.camera} ref={ref} facing={facing}>
-      <View style={styles.shutterContainer}>
-        <View style={styles.cameraControlButton} />
-        <Pressable onPress={takePicture}>
-          {({ pressed }) => (
-            <View style={[styles.shutterBtn, { opacity: pressed ? 0.5 : 1 }]}>
-              <View style={styles.shutterBtnInner} />
-            </View>
-          )}
-        </Pressable>
-        <Pressable onPress={toggleFacing} style={styles.cameraControlButton}>
-          <FontAwesome6 name="rotate-left" size={28} color="white" />
-        </Pressable>
-      </View>
-    </CameraView>
+    <View style={styles.cameraContainer}>
+      <CameraView 
+        style={styles.camera} 
+        ref={ref} 
+        facing={facing}
+      >
+        <View style={styles.shutterContainer}>
+          <View style={styles.cameraControlButton} />
+          <Pressable onPress={takePicture}>
+            {({ pressed }) => (
+              <View style={[styles.shutterBtn, { opacity: pressed ? 0.5 : 1 }]}>
+                <View style={styles.shutterBtnInner} />
+              </View>
+            )}
+          </Pressable>
+          <Pressable onPress={toggleFacing} style={styles.cameraControlButton}>
+            <FontAwesome6 name="rotate-left" size={28} color="white" />
+          </Pressable>
+        </View>
+      </CameraView>
+    </View>
   );
 
   if (!permission || !locationPermission) {
@@ -342,42 +414,57 @@ export default function App() {
 
 const windowHeight = Dimensions.get('window').height;
 
-// (Keep your styles here as-is)
-  const styles = StyleSheet.create({
-    container: { flex: 1, justifyContent: "center", alignItems: "center" },
-    camera: { flex: 1, width: "100%" },
-    shutterContainer: {
-      position: "absolute", bottom: 40, width: "100%", paddingHorizontal: 24,
-      flexDirection: "row", justifyContent: "space-between", alignItems: "center"
-    },
-    cameraControlButton: {
-      width: 60, height: 60, borderRadius: 30, backgroundColor: 'transparent',
-      justifyContent: 'center', alignItems: 'center'
-    },
-    shutterBtn: {
-      height: 80, width: 80, borderRadius: 40, borderWidth: 4,
-      borderColor: "white", justifyContent: "center", alignItems: "center"
-    },
-    shutterBtnInner: { height: 64, width: 64, borderRadius: 32, backgroundColor: "white" },
-    previewContainer: { flex: 1, width: "100%", justifyContent: "center", alignItems: "center" },
-    topSpacer: { flex: 0.2 }, imageContainer: { justifyContent: "center", alignItems: "center", flex: 0.4 },
-    previewImage: { width: 300, height: 300, aspectRatio: 1 },
-    middleSpacer: { flex: 0.05 }, bottomSpacer: { flex: 0.15 },
-    photoActionContainer: { flexDirection: 'row', justifyContent: 'space-around', width: '70%', alignItems: 'center', flex: 0.2 },
-    actionButton: { justifyContent: 'center', alignItems: 'center', margin: 20 },
-    greenCircle: {
-      width: 70, height: 70, borderRadius: 35, backgroundColor: '#4CAF50',
-      justifyContent: 'center', alignItems: 'center', elevation: 3,
-      shadowColor: '#000', shadowOffset: { width: 0, height: 2 },
-      shadowOpacity: 0.25, shadowRadius: 3.84,
-    },
-    instructionsContainer: { flex: 1, width: "100%", backgroundColor: "white", padding: 20 },
-    instructionsScroll: { flex: 1 },
-    instructionsTitle: { fontSize: 24, fontWeight: "bold", color: "#333", marginBottom: 10 },
-    confidenceText: { fontSize: 16, color: "#666", marginBottom: 20 },
-    section: { marginBottom: 20 },
-    sectionTitle: { fontSize: 18, fontWeight: "600", color: "#333", marginBottom: 10 },
-    instructionText: { fontSize: 16, color: "#444", marginBottom: 8, lineHeight: 22 },
-    closeButton: { backgroundColor: "#4CAF50", padding: 15, borderRadius: 10, alignItems: "center", marginTop: 20 },
-    closeButtonText: { color: "white", fontSize: 16, fontWeight: "600" }
-  });
+const styles = StyleSheet.create({
+  container: { flex: 1, justifyContent: "center", alignItems: "center" },
+  cameraContainer: {
+    flex: 1,
+    width: "100%",
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "white",
+  },
+  camera: {
+    width: Dimensions.get('window').width,
+    height: Dimensions.get('window').width,
+    aspectRatio: 1,
+  },
+  shutterContainer: {
+    position: "absolute",
+    bottom: 40,
+    width: "100%",
+    paddingHorizontal: 24,
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center"
+  },
+  cameraControlButton: {
+    width: 60, height: 60, borderRadius: 30, backgroundColor: 'transparent',
+    justifyContent: 'center', alignItems: 'center'
+  },
+  shutterBtn: {
+    height: 80, width: 80, borderRadius: 40, borderWidth: 4,
+    borderColor: "white", justifyContent: "center", alignItems: "center"
+  },
+  shutterBtnInner: { height: 64, width: 64, borderRadius: 32, backgroundColor: "white" },
+  previewContainer: { flex: 1, width: "100%", justifyContent: "center", alignItems: "center" },
+  topSpacer: { flex: 0.2 }, imageContainer: { justifyContent: "center", alignItems: "center", flex: 0.4 },
+  previewImage: { width: 300, height: 300, aspectRatio: 1 },
+  middleSpacer: { flex: 0.05 }, bottomSpacer: { flex: 0.15 },
+  photoActionContainer: { flexDirection: 'row', justifyContent: 'space-around', width: '70%', alignItems: 'center', flex: 0.2 },
+  actionButton: { justifyContent: 'center', alignItems: 'center', margin: 20 },
+  greenCircle: {
+    width: 70, height: 70, borderRadius: 35, backgroundColor: '#4CAF50',
+    justifyContent: 'center', alignItems: 'center', elevation: 3,
+    shadowColor: '#000', shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25, shadowRadius: 3.84,
+  },
+  instructionsContainer: { flex: 1, width: "100%", backgroundColor: "white", padding: 20 },
+  instructionsScroll: { flex: 1 },
+  instructionsTitle: { fontSize: 24, fontWeight: "bold", color: "#333", marginBottom: 10 },
+  confidenceText: { fontSize: 16, color: "#666", marginBottom: 20 },
+  section: { marginBottom: 20 },
+  sectionTitle: { fontSize: 18, fontWeight: "600", color: "#333", marginBottom: 10 },
+  instructionText: { fontSize: 16, color: "#444", marginBottom: 8, lineHeight: 22 },
+  closeButton: { backgroundColor: "#4CAF50", padding: 15, borderRadius: 10, alignItems: "center", marginTop: 20 },
+  closeButtonText: { color: "white", fontSize: 16, fontWeight: "600" }
+});

@@ -1,7 +1,10 @@
-import { View, Text, TouchableOpacity, Image, TextInput, Modal, Alert } from 'react-native';
+import { View, Text, TouchableOpacity, Image, TextInput, Modal, Alert, ActivityIndicator, StyleSheet } from 'react-native';
 import React, { useState, useEffect } from 'react';
 import { ScrollView } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { Ionicons } from '@expo/vector-icons';
+import { userSettingsService } from '../../services/userSettings';
+import { leaderboardService } from '../../services/leaderboard';
 
 //STILL IN PROGRESS, NEED TO ADD GOOGLE LINKING AND EMAIL SENDING, RIGHT NOW
 //IT JUST SAVES THE EMAIL AND NAME TO THE LOCAL STORAGE
@@ -13,80 +16,94 @@ const Account = () => {
   const [isEditingEmail, setIsEditingEmail] = useState(false);
   const [showLanguageModal, setShowLanguageModal] = useState(false);
   const [selectedLanguage, setSelectedLanguage] = useState('English');
-  const [isGoogleLinked, setIsGoogleLinked] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const insets = useSafeAreaInsets();
 
   const languages = ['English'];
 
-  // Log email changes
   useEffect(() => {
-    if (isGoogleLinked) {
-      console.log('Google Account Linked - Email:', email);
-    }
-  }, [isGoogleLinked, email]);
+    loadUserSettings();
+  }, []);
 
-  const handleSaveName = () => {
-    setIsEditingName(false);
-  };
-
-  const handleSaveEmail = () => {
-    setIsEditingEmail(false);
-  };
-
-  const handleGoogleLink = async () => {
+  const loadUserSettings = async () => {
     try {
-      if (isGoogleLinked) {
-        // Handle unlinking
-        Alert.alert(
-          "Unlink Google Account",
-          "Are you sure you want to unlink your Google account? This will remove access to Google Maps features.",
-          [
-            {
-              text: "Cancel",
-              style: "cancel"
-            },
-            {
-              text: "Unlink",
-              style: "destructive",
-              onPress: () => {
-                console.log('Google Account Unlinked - Previous email:', email);
-                // Clear user data when unlinking
-                setName('');
-                setEmail('');
-                setIsGoogleLinked(false);
-                Alert.alert("Success", "Google account unlinked successfully");
-              }
-            }
-          ]
-        );
-      } else {
-        // TODO: Implement actual Google sign-in
-        // This is a placeholder for demonstration. Replace with actual Google Sign-In implementation
-        try {
-          // Simulating Google Sign-In response
-          const mockGoogleUser = {
-            user: {
-              name: name || "John Doe", // For demo, use existing name or default
-              email: email || "johndoe@gmail.com", // For demo, use existing email or default
-            }
-          };
-
-          // Update user information with Google account data
-          setName(mockGoogleUser.user.name);
-          setEmail(mockGoogleUser.user.email);
-          setIsGoogleLinked(true);
-          console.log('Google Account Linked - New email:', mockGoogleUser.user.email);
-          Alert.alert("Success", "Google account linked successfully");
-        } catch (error) {
-          console.error('Google Sign-In Error:', error);
-          Alert.alert("Error", "Failed to get Google account information");
-        }
-      }
+      const settings = await userSettingsService.getUserSettings();
+      setName(settings.name);
+      setEmail(settings.email);
     } catch (error) {
-      console.error('Google Link Error:', error);
-      Alert.alert("Error", "Failed to connect with Google. Please try again.");
+      console.error('Error loading user settings:', error);
+      Alert.alert('Error', 'Failed to load user settings');
+    } finally {
+      setIsLoading(false);
     }
   };
+
+  const handleSaveName = async () => {
+    if (!name.trim()) {
+      Alert.alert('Error', 'Name cannot be empty');
+      return;
+    }
+
+    try {
+      setIsLoading(true);
+      // Update user settings
+      const updatedSettings = await userSettingsService.updateUserName(name.trim());
+      
+      // Get current leaderboard
+      const leaderboard = await leaderboardService.getLeaderboard();
+      const userEntry = leaderboard.find(entry => entry.userId === updatedSettings.userId);
+      
+      // Update leaderboard entry if it exists
+      if (userEntry) {
+        await leaderboardService.updateEntry({
+          ...userEntry,
+          name: name.trim()
+        });
+      }
+      
+      setIsEditingName(false);
+      Alert.alert('Success', 'Name updated successfully');
+    } catch (error) {
+      console.error('Error updating name:', error);
+      Alert.alert('Error', 'Failed to update name');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleSaveEmail = async () => {
+    if (!email.trim()) {
+      Alert.alert('Error', 'Email cannot be empty');
+      return;
+    }
+
+    // Basic email validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email.trim())) {
+      Alert.alert('Error', 'Please enter a valid email address');
+      return;
+    }
+
+    try {
+      setIsLoading(true);
+      await userSettingsService.updateUserEmail(email.trim());
+      setIsEditingEmail(false);
+      Alert.alert('Success', 'Email updated successfully');
+    } catch (error) {
+      console.error('Error updating email:', error);
+      Alert.alert('Error', 'Failed to update email');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  if (isLoading) {
+    return (
+      <View style={[styles.container, { paddingTop: insets.top }]}>
+        <ActivityIndicator size="large" color="#82C46B" />
+      </View>
+    );
+  }
 
   return (
     <ScrollView className="flex-1 bg-white p-4">
@@ -129,9 +146,17 @@ const Account = () => {
               </TouchableOpacity>
             </View>
           ) : (
-            <Text className="text-black text-lg">
-              {name || 'Add your name'}
-            </Text>
+            <View className="flex-row items-center justify-between">
+              <Text className="text-black text-lg">
+                {name || 'Add your name'}
+              </Text>
+              <TouchableOpacity 
+                onPress={() => setIsEditingName(true)}
+                className="px-3 py-1 rounded-full border border-gray-200"
+              >
+                <Text className="text-sm" style={{ color: '#82C46B' }}>Edit</Text>
+              </TouchableOpacity>
+            </View>
           )}
         </View>
 
@@ -213,24 +238,76 @@ const Account = () => {
             </View>
           </View>
         </Modal>
-
-        {/* Google Account Link Button */}
-        <TouchableOpacity 
-          onPress={handleGoogleLink}
-          className="mt-8 flex-row items-center justify-center bg-white border border-gray-300 rounded-lg py-4 px-6"
-          style={isGoogleLinked ? { borderColor: '#82C46B', borderWidth: 2 } : {}}
-        >
-          <Image 
-            source={{ uri: 'https://www.google.com/favicon.ico' }}
-            className="w-5 h-5 mr-3"
-          />
-          <Text className="text-base font-medium" style={{ color: isGoogleLinked ? '#82C46B' : '#000' }}>
-            {isGoogleLinked ? 'GOOGLE ACCOUNT LINKED' : 'LINK ACCOUNT WITH GOOGLE'}
-          </Text>
-        </TouchableOpacity>
       </View>
     </ScrollView>
   );
 };
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: 'white',
+  },
+  header: {
+    padding: 20,
+    borderBottomWidth: 1,
+    borderBottomColor: '#E5E5E5',
+  },
+  title: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#1A1A1A',
+  },
+  section: {
+    padding: 20,
+  },
+  sectionTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#1A1A1A',
+    marginBottom: 15,
+  },
+  nameContainer: {
+    backgroundColor: '#F8F8F8',
+    padding: 15,
+    borderRadius: 10,
+  },
+  label: {
+    fontSize: 14,
+    color: '#666',
+    marginBottom: 5,
+  },
+  nameDisplay: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  nameText: {
+    fontSize: 16,
+    color: '#1A1A1A',
+    fontWeight: '500',
+  },
+  editButton: {
+    padding: 5,
+  },
+  editContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  input: {
+    flex: 1,
+    fontSize: 16,
+    color: '#1A1A1A',
+    padding: 10,
+    backgroundColor: 'white',
+    borderRadius: 5,
+    borderWidth: 1,
+    borderColor: '#E5E5E5',
+    marginRight: 10,
+  },
+  saveButton: {
+    padding: 10,
+  },
+});
 
 export default Account;

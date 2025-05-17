@@ -83,10 +83,6 @@ const Map = () => {
       const lat = location.coords.latitude;
       const lon = location.coords.longitude;
       // 0.1 degrees is approximately 10km radius
-      // You can adjust this value to change the search radius:
-      // 0.05 = ~5km
-      // 0.1 = ~10km
-      // 0.2 = ~20km
       const radius = 0.1;
 
       console.log('Searching for recycling centers around:', { lat, lon, radiusKm: '10km' });
@@ -166,7 +162,8 @@ const Map = () => {
         longitude: location.coords.longitude,
         latitudeDelta: 0.0922,
         longitudeDelta: 0.0421,
-      }, 1000); // 1000ms animation duration
+      }, 1000 // 1000ms animation duration
+    ); 
     }
   };
 
