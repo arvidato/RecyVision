@@ -21,7 +21,16 @@ load_dotenv()
 print("Initializing Gemini model...")
 genai.configure(api_key=os.getenv('GOOGLE_API_KEY'))
 try:
-    gemini_model = genai.GenerativeModel('gemini-1.5-flash')
+    gemini_model = genai.GenerativeModel('gemini-1.5-flash',
+        generation_config={
+            "temperature": 0.1,
+            "top_p": 0.8,
+            "top_k": 40,
+            "max_output_tokens": 20,
+            "candidate_count": 1,
+            "stop_sequences": [],
+        }
+    )
     print("Gemini model initialized successfully")
 except Exception as e:
     print("Error initializing Gemini model:", str(e))
@@ -749,35 +758,104 @@ def predict_gemini():
         # Get the image file and convert it to PIL Image
         print("Getting image from request...")
         image_file = request.files['image']
-        image = Image.open(image_file.stream)
-        print(f"Image loaded. Size: {image.size}, Format: {image.format}")
+        
+        # Read the image data first
+        image_data = image_file.read()
+        if not image_data:
+            print("Error: Empty image data")
+            return jsonify({"error": "Empty image data"}), 400
+            
+        # Create a BytesIO object from the image data
+        image_stream = io.BytesIO(image_data)
+        
+        try:
+            image = Image.open(image_stream)
+            # Force RGB mode
+            if image.mode != 'RGB':
+                image = image.convert('RGB')
+        except Exception as e:
+            print(f"Error opening image: {str(e)}")
+            return jsonify({"error": "Invalid image format"}), 400
+        
+        # Resize image to a smaller size before processing
+        max_size = 256  # Increased from 128 to 256 for better quality
+        if max(image.size) > max_size:
+            ratio = max_size / max(image.size)
+            new_size = tuple(int(dim * ratio) for dim in image.size)
+            image = image.resize(new_size, Image.Resampling.LANCZOS)
+        
+        print(f"Image loaded. Size: {image.size}, Format: {image.format}, Mode: {image.mode}")
         
         # Prepare the prompt for Gemini
-        print("\nPreparing prompt for Gemini...")
-        prompt = """You are a waste classification AI. Your task is to analyze this image and classify the waste item.
+        print("\nPreparing prompt and image for Gemini API...")
+        prompt = """Classify this waste item into ONE of these categories:
+        - aerosol_cans
+        - aluminum_food_cans
+        - aluminum_soda_cans
+        - cardboard_boxes
+        - cardboard_packaging
+        - clothing
+        - coffee_grounds
+        - disposable_plastic_cutlery
+        - eggshells
+        - food_waste
+        - glass_beverage_bottles
+        - glass_cosmetic_containers
+        - glass_food_jars
+        - magazines
+        - newspaper
+        - office_paper
+        - paper_cups
+        - plastic_cup_lids
+        - plastic_detergent_bottles
+        - plastic_food_containers
+        - plastic_shopping_bags
+        - plastic_soda_bottles
+        - plastic_straws
+        - plastic_trash_bags
+        - plastic_water_bottles
+        - shoes
+        - steel_food_cans
+        - styrofoam_cups
+        - styrofoam_food_containers
+        - tea_bags
+        - unknown
 
-        First, analyze the image carefully. Look for:
-        1. Material type (plastic, paper, metal, glass, etc.)
-        2. Item shape and form
-        3. Any visible labels or markings
-        4. Overall condition
-
-        Then, classify the item into EXACTLY ONE of these categories:
-        aerosol_cans, aluminum_food_cans, aluminum_soda_cans, cardboard_boxes, cardboard_packaging, 
-        clothing, coffee_grounds, disposable_plastic_cutlery, eggshells, food_waste, glass_beverage_bottles, 
-        glass_cosmetic_containers, glass_food_jars, magazines, newspaper, office_paper, paper_cups, plastic_cup_lids, 
-        plastic_detergent_bottles, plastic_food_containers, plastic_shopping_bags, plastic_soda_bottles, plastic_straws, 
-        plastic_trash_bags, plastic_water_bottles, shoes, steel_food_cans, styrofoam_cups, styrofoam_food_containers, 
-        tea_bags, unknown.
-
-        If the item doesn't match any of the specific categories above, respond with 'unknown'.
         Respond with ONLY the category name from the list above, nothing else."""
 
         # Send to Gemini API with the PIL Image
-        print("\nSending request to Gemini API...")
+        print("\nSending prompt and image to Gemini API...")
+        print(f"Prompt sent: {prompt[:100]}...") # Log first 100 chars of prompt
+        print(f"Image format: {image.format}, size: {image.size}, mode: {image.mode}")
         try:
-            # Send the PIL Image to Gemini
-            response = gemini_model.generate_content([prompt, image])
+            # Use the same configuration as the test endpoint
+            response = gemini_model.generate_content(
+                [prompt, image],
+                generation_config={
+                    "temperature": 0.1,
+                    "top_p": 0.8,
+                    "top_k": 40,
+                    "max_output_tokens": 20,
+                },
+                safety_settings=[
+                    {
+                        "category": "HARM_CATEGORY_HARASSMENT",
+                        "threshold": "BLOCK_NONE"
+                    },
+                    {
+                        "category": "HARM_CATEGORY_HATE_SPEECH",
+                        "threshold": "BLOCK_NONE"
+                    },
+                    {
+                        "category": "HARM_CATEGORY_SEXUALLY_EXPLICIT",
+                        "threshold": "BLOCK_NONE"
+                    },
+                    {
+                        "category": "HARM_CATEGORY_DANGEROUS_CONTENT",
+                        "threshold": "BLOCK_NONE"
+                    }
+                ]
+            )
             print("Waiting for response resolution...")
             response.resolve()
             print("Response received and resolved successfully")
@@ -797,18 +875,17 @@ def predict_gemini():
             
             if prediction not in valid_categories:
                 print(f"Invalid prediction: '{prediction}' not in valid categories")
-                print("Gemini prediction failed, continuing with custom model only")
                 return jsonify({
-                    "error": "Gemini prediction failed",
+                    "error": "Invalid prediction",
                     "message": "Continuing with custom model only"
-                }), 200  # Changed to 200 to indicate we're handling the error gracefully
+                }), 200
 
             print(f"Valid prediction received: {prediction}")
             
             # Prepare the final result
             result = {
                 "prediction": prediction,
-                "confidence": 0.95,  # Default confidence for Gemini predictions
+                "confidence": 0.95,
                 "model": "gemini"
             }
             print(f"\nReturning result: {result}")
@@ -818,22 +895,114 @@ def predict_gemini():
             print("\nError during Gemini API call:")
             print(f"Error type: {type(e)}")
             print(f"Error message: {str(e)}")
-            print("Gemini prediction failed, continuing with custom model only")
             return jsonify({
                 "error": "Gemini prediction failed",
                 "message": "Continuing with custom model only"
-            }), 200  # Changed to 200 to indicate we're handling the error gracefully
+            }), 200
 
     except Exception as e:
         print("\nGemini prediction error:")
         print(f"Error type: {type(e)}")
         print(f"Error message: {str(e)}")
-        print(f"Full error details: {repr(e)}")
-        print("Gemini prediction failed, continuing with custom model only")
         return jsonify({
             "error": "Gemini prediction failed",
             "message": "Continuing with custom model only"
-        }), 200  # Changed to 200 to indicate we're handling the error gracefully
+        }), 200
+
+@app.route('/test-gemini', methods=['GET'])
+def test_gemini():
+    print("\n=== Testing Gemini with simple prompt ===")
+    try:
+        prompt = "Say hi"
+        print("\nSending simple prompt to Gemini...")
+        response = gemini_model.generate_content(prompt)
+        print("Response received and resolved successfully")
+        print("\nRaw Gemini Response:")
+        print(f"Response text: {response.text}")
+        return jsonify({"response": response.text})
+    except Exception as e:
+        print("\nError during Gemini API call:")
+        print(f"Error type: {type(e)}")
+        print(f"Error message: {str(e)}")
+        return jsonify({"error": str(e)}), 500
+
+@app.route('/test-gemini-image', methods=['GET'])
+def test_gemini_image():
+    print("\n=== Testing Gemini with Image Classification ===")
+    try:
+        # Create a test image of a plastic bottle
+        # Using a simple representation with a white background and a bottle shape
+        image = Image.new('RGB', (512, 512), color='white')
+        from PIL import ImageDraw
+        draw = ImageDraw.Draw(image)
+        
+        # Draw a simple bottle shape
+        # Bottle body
+        draw.rectangle([(200, 100), (312, 400)], fill='lightblue', outline='blue')
+        # Bottle neck
+        draw.rectangle([(240, 50), (272, 100)], fill='lightblue', outline='blue')
+        # Bottle cap
+        draw.rectangle([(230, 30), (282, 50)], fill='gray', outline='darkgray')
+        
+        print("\nCreated test image of a plastic bottle")
+        print(f"Image size: {image.size}")
+        
+        # Prepare the prompt for Gemini
+        print("\nPreparing prompt for Gemini...")
+        prompt = """Analyze this image and classify the waste item into ONE of these categories:
+        - aerosol_cans
+        - aluminum_food_cans
+        - aluminum_soda_cans
+        - cardboard_boxes
+        - cardboard_packaging
+        - clothing
+        - coffee_grounds
+        - disposable_plastic_cutlery
+        - eggshells
+        - food_waste
+        - glass_beverage_bottles
+        - glass_cosmetic_containers
+        - glass_food_jars
+        - magazines
+        - newspaper
+        - office_paper
+        - paper_cups
+        - plastic_cup_lids
+        - plastic_detergent_bottles
+        - plastic_food_containers
+        - plastic_shopping_bags
+        - plastic_soda_bottles
+        - plastic_straws
+        - plastic_trash_bags
+        - plastic_water_bottles
+        - shoes
+        - steel_food_cans
+        - styrofoam_cups
+        - styrofoam_food_containers
+        - tea_bags
+        - unknown
+
+        Respond with ONLY the category name from the list above, nothing else."""
+
+        print("\nSending request to Gemini API...")
+        response = gemini_model.generate_content(
+            [prompt, image],
+            generation_config={
+                "temperature": 0.1,
+                "top_p": 0.8,
+                "top_k": 40,
+                "max_output_tokens": 20,
+            }
+        )
+        print("Response received and resolved successfully")
+        print("\nRaw Gemini Response:")
+        print(f"Response text: {response.text}")
+        return jsonify({"response": response.text})
+    except Exception as e:
+        print("\nError during Gemini API call:")
+        print(f"Error type: {type(e)}")
+        print(f"Error message: {str(e)}")
+        return jsonify({"error": str(e)}), 500
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=5001)

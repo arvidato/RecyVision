@@ -96,8 +96,8 @@ export default function App() {
 
       const resized = await ImageManipulator.manipulateAsync(
         photo.uri,
-        [{ resize: { width: 256, height: 256 } }],
-        { compress: 1, format: ImageManipulator.SaveFormat.JPEG }
+        [{ resize: { width: 512, height: 512 } }],
+        { compress: 0.8, format: ImageManipulator.SaveFormat.JPEG }
       );
 
       console.log("Resized image URI:", resized.uri);
@@ -111,6 +111,7 @@ export default function App() {
       }
     } catch (error) {
       console.error("Error taking picture:", error);
+      Alert.alert("Error", "Failed to process the image. Please try again.");
     }
   };
 
@@ -119,7 +120,7 @@ export default function App() {
     setIsProcessing(true);
 
     try {
-      const formData = new FormData();
+      let formData = new FormData();
       const filename = uri.split('/').pop() || 'photo.jpg';
       const match = /\.(\w+)$/.exec(filename);
       const type = match ? `image/${match[1]}` : 'image/jpeg';
@@ -130,59 +131,84 @@ export default function App() {
         type: type
       } as any);
 
-      // First try Gemini
+      // First try Gemini with timeout
       let geminiData;
       try {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 120000); // Increased from 60s to 120s timeout
+
         const geminiResponse = await fetch(`${config.API_URL}${config.API_ENDPOINTS.PREDICT_GEMINI}`, {
           method: 'POST',
           body: formData,
-          headers: { 'Content-Type': 'multipart/form-data' }
+          headers: { 
+            'Content-Type': 'multipart/form-data',
+            'Accept': 'application/json'
+          },
+          signal: controller.signal
         });
 
-        if (geminiResponse.ok) {
-          geminiData = await geminiResponse.json();
-          
-          // Get user settings for ID and name
-          const userSettings = await userSettingsService.getUserSettings();
-          const userId = userSettings.userId;
-          
-          // Get points for the predicted item
-          const itemType = geminiData.prediction as RecyclableItem;
-          const basePoints = pointsSystem.getPointsForItem(itemType);
-          
-          // Get streak bonus
-          const { streakBonus, currentStreak } = await streakService.updateStreak(userId);
-          
-          const totalPoints = basePoints + streakBonus;
-          
-          // Add points to leaderboard
-          await leaderboardService.addPoints(userId, totalPoints, userSettings.name);
-          
-          // Track unique item
-          await uniqueItemsService.addUniqueItem(userId, itemType);
-          
-          // If we got a valid Gemini response, navigate directly to recycling tips
-          router.push({
-            pathname: '/recycling-tips',
-            params: {
-              prediction: JSON.stringify({
-                prediction: geminiData.prediction,
-                confidence: geminiData.confidence || 1,
-                explanation: geminiData.explanation,
-                points: totalPoints,
-                category: pointsSystem.getCategoryForItem(itemType)
-              }),
-              model: 'gemini',
-              imageUri: uri
-            }
+        clearTimeout(timeoutId);
+
+        if (!geminiResponse.ok) {
+          const errorData = await geminiResponse.json().catch(() => null);
+          console.error('Gemini response not ok:', {
+            status: geminiResponse.status,
+            statusText: geminiResponse.statusText,
+            error: errorData
           });
-          return;
+          throw new Error(`Gemini API error: ${geminiResponse.status} ${geminiResponse.statusText}`);
         }
+
+        geminiData = await geminiResponse.json();
+        
+        // Get user settings for ID and name
+        const userSettings = await userSettingsService.getUserSettings();
+        const userId = userSettings.userId;
+        
+        // Get points for the predicted item
+        const itemType = geminiData.prediction as RecyclableItem;
+        const basePoints = pointsSystem.getPointsForItem(itemType);
+        
+        // Get streak bonus
+        const { streakBonus, currentStreak } = await streakService.updateStreak(userId);
+        
+        const totalPoints = basePoints + streakBonus;
+        
+        // Add points to leaderboard
+        await leaderboardService.addPoints(userId, totalPoints, userSettings.name);
+        
+        // Track unique item
+        await uniqueItemsService.addUniqueItem(userId, itemType);
+        
+        // If we got a valid Gemini response, navigate directly to recycling tips
+        router.push({
+          pathname: '/recycling-tips',
+          params: {
+            prediction: JSON.stringify({
+              prediction: geminiData.prediction,
+              confidence: geminiData.confidence || 1,
+              explanation: geminiData.explanation,
+              points: totalPoints,
+              category: pointsSystem.getCategoryForItem(itemType)
+            }),
+            model: 'gemini',
+            imageUri: uri
+          }
+        });
+        return;
       } catch (geminiError) {
         console.warn('Gemini error:', geminiError);
+        // Create a new FormData for the offline model
+        formData = new FormData();
+        formData.append('image', {
+          uri: uri,
+          name: filename,
+          type: type
+        } as any);
       }
 
-      // If Gemini failed, try the custom model
+      // If Gemini failed or timed out, try the custom model
+      console.log('Attempting offline model prediction...');
       const customResponse = await fetch(`${config.API_URL}${config.API_ENDPOINTS.PREDICT}`, {
         method: 'POST',
         body: formData,
@@ -194,6 +220,7 @@ export default function App() {
       }
 
       const customData = await customResponse.json();
+      console.log('Offline model prediction received:', customData);
 
       // Update leaderboard with points and streak bonus
       const predictedClass = customData.prediction;

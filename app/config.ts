@@ -4,7 +4,7 @@ import Constants from 'expo-constants';
 const getLocalIP = () => {
   if (__DEV__) {
     // In development, use the local IP from the development server
-    const localIP = Constants.expoConfig?.extra?.localIP || '10.18.18.193';
+    const localIP = Constants.expoConfig?.extra?.localIP || '192.168.37.17';
     return `http://${localIP}:5001`;
   }
   // In production, use the production API URL
@@ -17,4 +17,6 @@ export const config = {
     PREDICT: '/predict',
     PREDICT_GEMINI: '/predict-gemini',
   },
-}; 
+};
+
+export default config; 
