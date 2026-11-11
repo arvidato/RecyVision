@@ -2,7 +2,7 @@
 
 **Making recycling smarter, simpler, and more accessible.**
 
-RecyVision is a mobile recycling application designed to help users identify recyclable waste, understand proper disposal methods, and discover nearby recycling locations. By combining computer vision, recycling information, and gamification, RecyVision encourages sustainable waste management practices and environmental awareness.
+RecyVision is a mobile application that helps users identify waste, understand proper recycling practices, and discover nearby recycling locations. Combining image classification, recycling information, and gamification, the application encourages environmentally responsible behavior and sustainable waste management.
 
 Developed as an academic project at the **Lucerne University of Applied Sciences and Arts (HSLU)**.
 
@@ -10,49 +10,52 @@ Developed as an academic project at the **Lucerne University of Applied Sciences
 
 ## ✨ Features
 
-- **AI-Powered Recycling Scanner** – Identify waste items using image-based classification.
-- **Offline Predictions** – Classify waste without requiring an internet connection using an offline model.
-- **Recycling Information** – Access information about detected items and their appropriate disposal methods.
-- **Recycling Location Map** – Explore recycling locations and view additional details about recycling centers.
-- **User Accounts** – Manage your personal account and application profile.
-- **Gamification** – Earn achievements, track unique items, and participate in leaderboards.
-- **Sustainability Awareness** – Encourage responsible waste disposal and sustainable everyday practices.
+- **AI-Powered Recycling Scanner** – Identify waste items using image classification.
+- **Offline Predictions** – Classify waste using an offline prediction model.
+- **Recycling Tips & Information** – Learn how to prepare and dispose of detected items correctly.
+- **Recycling Location Map** – Discover nearby recycling centers and view accepted materials and opening hours.
+- **Recycling Progress Tracker** – Track recycling activity through a calendar and statistics.
+- **Gamification** – Earn points, collect unique items, unlock achievements, and compete on leaderboards.
+- **User Accounts** – Manage account information and application preferences.
+- **Sustainability Awareness** – Encourage responsible waste disposal and environmentally conscious habits.
 
 ---
 
 ## 📱 Application Screenshots
 
-### Home & Account
+### 🏠 Home & Account
 
 <p align="center">
-  <img src="screenshots/Home%20Page.PNG" width="250" alt="RecyVision Home Page" />
-  <img src="screenshots/Account%20Page.PNG" width="250" alt="RecyVision Account Page" />
+  <img src="screenshots/Home%20Page.PNG" width="280" alt="RecyVision Home Page" />
+  <img src="screenshots/Account%20Page.PNG" width="280" alt="RecyVision Account Page" />
 </p>
 
-### AI Recycling Scanner
+### 📷 AI Recycling Scanner
 
 <p align="center">
-  <img src="screenshots/Camera%20Page.PNG" width="250" alt="RecyVision Camera Page" />
-  <img src="screenshots/Main%20Model%20Prediction%20Page.PNG" width="250" alt="Main Model Prediction" />
+  <img src="screenshots/Camera%20Page.PNG" width="280" alt="RecyVision Camera Page" />
+  <img src="screenshots/Image%20Confirmation%20Page.PNG" width="280" alt="Image Confirmation Page" />
 </p>
 
+### 🤖 Waste Classification & Predictions
+
 <p align="center">
-  <img src="screenshots/Offline%20Model%20Prediction%20Page.PNG" width="250" alt="Offline Model Prediction" />
-  <img src="screenshots/Image%20Information%20Page.PNG" width="250" alt="Image Information Page" />
+  <img src="screenshots/Main%20Model%20Prediction%20Page.PNG" width="280" alt="Main Model Prediction" />
+  <img src="screenshots/Offline%20Model%20Prediction%20Page.PNG" width="280" alt="Offline Model Prediction" />
 </p>
 
-### Recycling Locations
+### 🗺️ Recycling Locations
 
 <p align="center">
-  <img src="screenshots/Map%20Page.PNG" width="250" alt="RecyVision Recycling Map" />
-  <img src="screenshots/Map%20Page%20Details%20Page.PNG" width="250" alt="Recycling Location Details" />
+  <img src="screenshots/Map%20Page.PNG" width="280" alt="RecyVision Recycling Map" />
+  <img src="screenshots/Map%20Page%20Details%20Page.PNG" width="280" alt="Recycling Location Details" />
 </p>
 
-### Gamification
+### 🏆 Gamification & Achievements
 
 <p align="center">
-  <img src="screenshots/Leaderboards%20Page.PNG" width="250" alt="RecyVision Leaderboards" />
-  <img src="screenshots/Unique%20Item%20Achievement%20Page.PNG" width="250" alt="RecyVision Achievements" />
+  <img src="screenshots/Leaderboards%20Page.PNG" width="280" alt="RecyVision Leaderboards" />
+  <img src="screenshots/Unique%20Item%20Achievement%20Page.PNG" width="280" alt="RecyVision Unique Items" />
 </p>
 
 ---
@@ -65,8 +68,8 @@ Developed as an academic project at the **Lucerne University of Applied Sciences
 | Programming Language | TypeScript |
 | Navigation | Expo Router |
 | Backend | Python |
-| AI / Machine Learning | Computer Vision, Image Classification |
-| Database / Services | Firebase |
+| Machine Learning | Computer Vision, Image Classification |
+| Database & Services | Firebase |
 | Development Tools | Git, GitHub, VS Code |
 
 ---
@@ -101,32 +104,30 @@ Start the Expo development server:
 npx expo start
 ```
 
-Follow the instructions in the terminal to run the application on an emulator or a compatible mobile device.
+Follow the Expo instructions to run the application on an emulator or compatible mobile device.
 
-> **Note:** Backend services and AI model functionality may require additional configuration depending on the selected prediction mode.
+> **Note:** Backend services, Firebase integration, and AI prediction functionality may require additional configuration.
 
 ---
 
 ## 🌱 Sustainability
 
-RecyVision contributes to sustainability by promoting responsible waste management and encouraging environmentally conscious behavior.
+RecyVision promotes responsible consumption and waste management by making recycling information more accessible and encouraging sustainable everyday practices.
 
-The project aligns with:
+The project supports the following United Nations Sustainable Development Goals:
 
-- **UN Sustainable Development Goal 12 – Responsible Consumption and Production**
-- **UN Sustainable Development Goal 13 – Climate Action**
-
-By making recycling information more accessible, RecyVision aims to help users make informed decisions about waste disposal and reduce improper waste management practices.
+- **SDG 12 – Responsible Consumption and Production**
+- **SDG 13 – Climate Action**
 
 ---
 
-## 📚 Project Documentation
+## 📚 Documentation
 
 Additional project documentation includes:
 
 - Project Management Report
 - User Guide
-- Technical and implementation documentation
+- Technical and Implementation Documentation
 
 ---
 
@@ -140,10 +141,10 @@ Developed as part of the **Master of Science in IT – Digitalization & Sustaina
 
 **Arvi Dato**
 
-Software Developer | AI/ML | Full-Stack Development | Game Development
+Software Developer | Full-Stack Development | AI/ML | Game Development
 
 - GitHub: [@arvidato](https://github.com/arvidato)
 
 ---
 
-⭐ If you find this project interesting, feel free to explore the repository!
+⭐ Feel free to explore the repository and learn more about RecyVision!
