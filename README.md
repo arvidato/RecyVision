@@ -1,50 +1,86 @@
-# Welcome to your Expo app 👋
+# ♻️ RecyVision
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+Making recycling smarter, simpler, and more accessible.
 
-## Get started
+## ✨ Features
 
-1. Install dependencies
+- **AI Recycling Scanner** – Identify waste items using computer vision.
+- **Recycling Guidance** – Receive recycling instructions based on Swiss practices.
+- **Recycling Center Map** – Locate nearby recycling facilities and explore their information.
+- **Recycling Center Information** – View accepted materials, operating hours, and facility details.
+- **Calendar Tracker** – Track recycling activities and scanning history.
+- **Achievements & Gamification** – Track recycling progress and unlock achievements.
+- **Leaderboard** – Compare recycling achievements with other users.
+- **User Accounts** – Manage profiles and recycling history.
+
+## 🛠️ Tech Stack
+
+- React Native
+- Expo
+- Expo Router
+- TypeScript
+- Computer Vision / Machine Learning
+- Google Gemini API
+- Firebase
+
+## 📱 Screenshots
+
+<!-- Add application screenshots here -->
+
+## 🚀 Getting Started
+
+### Prerequisites
+
+- Node.js (LTS recommended)
+- npm or Yarn
+- Expo Go
+- Android Studio or Xcode (optional for emulators)
+
+### Installation
+
+1. Clone the repository:
+
+   ```bash
+   git clone YOUR_REPOSITORY_URL
+   cd RecyVision
+   ```
+
+2. Install dependencies:
 
    ```bash
    npm install
    ```
 
-2. Start the app
+3. Start the Expo development server:
 
    ```bash
-    npx expo start
+   npx expo start
    ```
 
-In the output, you'll find options to open the app in a
+4. Run the application:
+   - Scan the QR code using Expo Go.
+   - Press `a` to launch an Android emulator.
+   - Press `i` to launch an iOS simulator (macOS required).
 
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
+## 📖 Documentation
 
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
+- [User Guide](docs/User_Guide.pdf)
+- [Management Report](docs/Management_Report.pdf)
 
-## Get a fresh project
+## 🎓 Academic Project
 
-When you're ready, run:
+Developed as part of the **Managing IT Projects** course at the Lucerne University of Applied Sciences and Arts (HSLU), Spring 2025.
 
-```bash
-npm run reset-project
-```
+The project followed an Agile Scrum development methodology and consisted of planning and four development sprints.
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
+## 🌱 Sustainability
 
-## Learn more
+RecyVision supports environmental sustainability by promoting proper waste classification and encouraging recycling participation.
 
-To learn more about developing your project with Expo, look at the following resources:
+## 📄 License
 
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
+This project is licensed under the MIT License. See [LICENSE](LICENSE) for details.
 
-## Join the community
+## 👥 Contributors
 
-Join our community of developers creating universal apps.
-
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+Developed collaboratively by the RecyVision project team.
