@@ -30,22 +30,29 @@ const RecyclingPage: React.FC = () => {
     try {
       const formData = new FormData();
       formData.append('image', capturedImage);
+      console.log('FormData created with image');
 
       const endpoint = selectedModel === 'custom' ? '/predict' : '/predict-gemini';
-      const response = await fetch(`http://localhost:5001${endpoint}`, {
+      console.log(`Making request to: http://192.168.37.17:5001${endpoint}`);
+      
+      const response = await fetch(`http://192.168.37.17:5001${endpoint}`, {
         method: 'POST',
         body: formData,
       });
+      console.log('Response received:', response.status, response.statusText);
 
       if (!response.ok) {
-        throw new Error('Prediction failed');
+        const errorText = await response.text();
+        console.error('Error response:', errorText);
+        throw new Error(`Prediction failed: ${response.status} ${response.statusText}`);
       }
 
       const result = await response.json();
+      console.log('Prediction result:', result);
       setPrediction(result);
-    } catch (err) {
-      setError('Failed to get prediction. Please try again.');
-      console.error('Prediction error:', err);
+    } catch (err: any) {
+      console.error('Detailed prediction error:', err);
+      setError(`Failed to get prediction: ${err.message || 'Unknown error'}`);
     } finally {
       setLoading(false);
     }

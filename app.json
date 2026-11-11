@@ -9,7 +9,10 @@
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "extra": {
-      "localIP": "10.18.18.193"
+      // INSERT LOCAL IP TO USE HERE
+      //USE THIS IN THE TERMINAL TO FIND THE LOCAL IP
+      //ifconfig | grep "inet " | grep -v 127.0.0.1
+      "localIP": "10.155.120.178"
     },
     "ios": {
       "supportsTablet": true,

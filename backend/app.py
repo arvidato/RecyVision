@@ -758,12 +758,15 @@ def predict_gemini():
         # Get the image file and convert it to PIL Image
         print("Getting image from request...")
         image_file = request.files['image']
+        print(f"Image file info: {image_file.filename}, {image_file.content_type}")
         
         # Read the image data first
         image_data = image_file.read()
         if not image_data:
             print("Error: Empty image data")
             return jsonify({"error": "Empty image data"}), 400
+            
+        print(f"Image data size: {len(image_data)} bytes")
             
         # Create a BytesIO object from the image data
         image_stream = io.BytesIO(image_data)
@@ -772,6 +775,7 @@ def predict_gemini():
             image = Image.open(image_stream)
             # Force RGB mode
             if image.mode != 'RGB':
+                print(f"Converting image from {image.mode} to RGB")
                 image = image.convert('RGB')
         except Exception as e:
             print(f"Error opening image: {str(e)}")
@@ -782,6 +786,7 @@ def predict_gemini():
         if max(image.size) > max_size:
             ratio = max_size / max(image.size)
             new_size = tuple(int(dim * ratio) for dim in image.size)
+            print(f"Resizing image from {image.size} to {new_size}")
             image = image.resize(new_size, Image.Resampling.LANCZOS)
         
         print(f"Image loaded. Size: {image.size}, Format: {image.format}, Mode: {image.mode}")
@@ -828,6 +833,7 @@ def predict_gemini():
         print(f"Prompt sent: {prompt[:100]}...") # Log first 100 chars of prompt
         print(f"Image format: {image.format}, size: {image.size}, mode: {image.mode}")
         try:
+            print("Initializing Gemini API call...")
             # Use the same configuration as the test endpoint
             response = gemini_model.generate_content(
                 [prompt, image],
@@ -895,6 +901,7 @@ def predict_gemini():
             print("\nError during Gemini API call:")
             print(f"Error type: {type(e)}")
             print(f"Error message: {str(e)}")
+            print(f"Error details: {e.__dict__ if hasattr(e, '__dict__') else 'No details available'}")
             return jsonify({
                 "error": "Gemini prediction failed",
                 "message": "Continuing with custom model only"
@@ -904,6 +911,7 @@ def predict_gemini():
         print("\nGemini prediction error:")
         print(f"Error type: {type(e)}")
         print(f"Error message: {str(e)}")
+        print(f"Error details: {e.__dict__ if hasattr(e, '__dict__') else 'No details available'}")
         return jsonify({
             "error": "Gemini prediction failed",
             "message": "Continuing with custom model only"

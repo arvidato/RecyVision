@@ -21,6 +21,7 @@ import { leaderboardService } from '../../services/leaderboard';
 import { streakService } from '../../services/streakService';
 import { userSettingsService } from '../../services/userSettings';
 import { uniqueItemsService } from '../../services/uniqueItemsService';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 interface Prediction {
   prediction: string;
@@ -58,6 +59,33 @@ const CLASS_MAPPING: Record<string, string> = {
   '27': 'styrofoam_cups',
   '28': 'styrofoam_food_containers',
   '29': 'tea_bags'
+};
+
+// Add classifyImage function
+const classifyImage = async (imageUri: string) => {
+  console.log('Classifying image with offline model...');
+  const formData = new FormData();
+  formData.append('image', {
+    uri: imageUri,
+    type: 'image/jpeg',
+    name: 'photo.jpg',
+  } as any);
+
+  const response = await fetch(`${config.API_URL}${config.API_ENDPOINTS.PREDICT}`, {
+    method: 'POST',
+    body: formData,
+    headers: {
+      'Content-Type': 'multipart/form-data',
+    },
+  });
+
+  if (!response.ok) {
+    throw new Error('Offline model prediction failed');
+  }
+
+  const data = await response.json();
+  console.log('Offline model response:', data);
+  return data.prediction;
 };
 
 export default function App() {
@@ -116,174 +144,105 @@ export default function App() {
   };
 
   const handleCheck = async () => {
-    if (!uri) return;
-    setIsProcessing(true);
-
     try {
-      let formData = new FormData();
+      console.log('Starting image processing...');
+      if (!uri) {
+        console.log('No image available');
+        return;
+      }
+
+      // Prepare image data
+      const formData = new FormData();
       const filename = uri.split('/').pop() || 'photo.jpg';
       const match = /\.(\w+)$/.exec(filename);
       const type = match ? `image/${match[1]}` : 'image/jpeg';
+      console.log("Prepared image data:", { filename, type });
 
       formData.append('image', {
         uri: uri,
         name: filename,
         type: type
       } as any);
+      console.log("FormData created with image");
 
-      // First try Gemini with timeout
-      let geminiData;
-      try {
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 120000); // Increased from 60s to 120s timeout
-
-        const geminiResponse = await fetch(`${config.API_URL}${config.API_ENDPOINTS.PREDICT_GEMINI}`, {
-          method: 'POST',
-          body: formData,
-          headers: { 
-            'Content-Type': 'multipart/form-data',
-            'Accept': 'application/json'
-          },
-          signal: controller.signal
-        });
-
-        clearTimeout(timeoutId);
-
-        if (!geminiResponse.ok) {
-          const errorData = await geminiResponse.json().catch(() => null);
-          console.error('Gemini response not ok:', {
-            status: geminiResponse.status,
-            statusText: geminiResponse.statusText,
-            error: errorData
-          });
-          throw new Error(`Gemini API error: ${geminiResponse.status} ${geminiResponse.statusText}`);
-        }
-
-        geminiData = await geminiResponse.json();
-        
-        // Get user settings for ID and name
-        const userSettings = await userSettingsService.getUserSettings();
-        const userId = userSettings.userId;
-        
-        // Get points for the predicted item
-        const itemType = geminiData.prediction as RecyclableItem;
-        const basePoints = pointsSystem.getPointsForItem(itemType);
-        
-        // Get streak bonus
-        const { streakBonus, currentStreak } = await streakService.updateStreak(userId);
-        
-        const totalPoints = basePoints + streakBonus;
-        
-        // Add points to leaderboard
-        await leaderboardService.addPoints(userId, totalPoints, userSettings.name);
-        
-        // Track unique item
-        await uniqueItemsService.addUniqueItem(userId, itemType);
-        
-        // If we got a valid Gemini response, navigate directly to recycling tips
-        router.push({
-          pathname: '/recycling-tips',
-          params: {
-            prediction: JSON.stringify({
-              prediction: geminiData.prediction,
-              confidence: geminiData.confidence || 1,
-              explanation: geminiData.explanation,
-              points: totalPoints,
-              category: pointsSystem.getCategoryForItem(itemType)
-            }),
-            model: 'gemini',
-            imageUri: uri
-          }
-        });
-        return;
-      } catch (geminiError) {
-        console.warn('Gemini error:', geminiError);
-        // Create a new FormData for the offline model
-        formData = new FormData();
-        formData.append('image', {
-          uri: uri,
-          name: filename,
-          type: type
-        } as any);
-      }
-
-      // If Gemini failed or timed out, try the custom model
-      console.log('Attempting offline model prediction...');
-      const customResponse = await fetch(`${config.API_URL}${config.API_ENDPOINTS.PREDICT}`, {
+      // Try Gemini API first
+      console.log('Attempting to call Gemini API...');
+      const response = await fetch(`${config.API_URL}${config.API_ENDPOINTS.PREDICT_GEMINI}`, {
         method: 'POST',
         body: formData,
-        headers: { 'Content-Type': 'multipart/form-data' }
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
       });
 
-      if (!customResponse.ok) {
-        throw new Error('Custom model prediction failed');
+      console.log('Gemini API response status:', response.status);
+      const data = await response.json();
+      console.log('Gemini API response:', data);
+
+      if (data.error) {
+        console.log('Gemini API error:', data.error);
+        console.log('Falling back to offline model...');
+        // Fall back to offline model
+        const result = await classifyImage(uri);
+        console.log('Offline model result:', result);
+        setPrediction(result);
+      } else {
+        console.log('Gemini prediction successful:', data.prediction);
+        setPrediction(data.prediction);
       }
 
-      const customData = await customResponse.json();
-      console.log('Offline model prediction received:', customData);
-
-      // Update leaderboard with points and streak bonus
-      const predictedClass = customData.prediction;
-      console.log('Raw prediction:', predictedClass);
-      
-      // Map the prediction to our class names
-      const itemType = CLASS_MAPPING[predictedClass] as RecyclableItem;
-      console.log('Mapped item type:', itemType);
-      
-      const basePoints = pointsSystem.getPointsForItem(itemType);
-      console.log('Base points:', basePoints);
-      
-      // Get user settings for ID and name
+      // Get user settings
+      console.log('Getting user settings...');
       const userSettings = await userSettingsService.getUserSettings();
       const userId = userSettings.userId;
       console.log('User ID:', userId);
+
+      // Calculate points
+      console.log('Calculating points...');
+      const itemType = data.prediction as RecyclableItem;
+      console.log("Predicted item type:", itemType);
+      const basePoints = pointsSystem.getPointsForItem(itemType);
+      console.log("Base points:", basePoints);
       
       // Get streak bonus
+      console.log("Calculating streak bonus...");
       const { streakBonus, currentStreak } = await streakService.updateStreak(userId);
-      console.log('Streak bonus:', streakBonus, 'Current streak:', currentStreak);
+      console.log("Streak bonus:", streakBonus, "Current streak:", currentStreak);
       
       const totalPoints = basePoints + streakBonus;
-      console.log('Total points:', totalPoints);
+      console.log("Total points:", totalPoints);
       
-      // Add points to leaderboard with user's name
+      // Add points to leaderboard
+      console.log("Adding points to leaderboard...");
       await leaderboardService.addPoints(userId, totalPoints, userSettings.name);
       console.log('Points added to leaderboard');
 
       // Track unique item
+      console.log("Tracking unique item...");
       await uniqueItemsService.addUniqueItem(userId, itemType);
       console.log('Unique item tracked');
 
-      // Navigate to model selection page with custom model results
+      // Navigate to recycling tips
+      console.log('Navigating to recycling tips...');
       router.push({
-        pathname: '/model-selection',
+        pathname: '/recycling-tips',
         params: {
-          imageUri: uri,
-          customPrediction: JSON.stringify({
-            prediction: customData.prediction,
-            confidence: customData.confidence || 1,
+          prediction: JSON.stringify({
+            prediction: data.prediction,
+            confidence: data.confidence || 1,
+            explanation: data.explanation,
             points: totalPoints,
-            basePoints: basePoints,
-            streakBonus: streakBonus,
-            currentStreak: currentStreak,
             category: pointsSystem.getCategoryForItem(itemType)
           }),
-          geminiPrediction: JSON.stringify({
-            prediction: customData.prediction,
-            confidence: customData.confidence || 1,
-            explanation: 'Gemini model is currently unavailable'
-          })
+          model: 'gemini',
+          imageUri: uri
         }
       });
+      console.log('Navigation complete');
 
     } catch (error) {
-      console.error("Error uploading image:", error);
-      Alert.alert(
-        "Prediction Error",
-        "Failed to get predictions. Please try again.",
-        [{ text: "OK" }]
-      );
-    } finally {
-      setIsProcessing(false);
+      console.error('Error in handleCheck:', error);
+      Alert.alert('Error', 'Failed to process image');
     }
   };
 

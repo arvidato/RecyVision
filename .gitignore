@@ -37,3 +37,44 @@ yarn-error.*
 
 app-example
 .venv/
+
+
+# Dependencies
+node_modules/
+
+# Python virtual environments
+.venv/
+venv/
+
+# Expo
+.expo/
+dist/
+web-build/
+
+# Environment variables
+.env
+.env.local
+.env.*.local
+
+# IDE
+.idea/
+.vscode/
+
+# macOS
+.DS_Store
+._*
+
+# Windows
+Thumbs.db
+
+# Python cache
+__pycache__/
+*.py[cod]
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Temporary files
+*.tmp
