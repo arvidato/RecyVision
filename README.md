@@ -1,50 +1,150 @@
-# Welcome to your Expo app 👋
+# ♻️ RecyVision
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+**Making recycling smarter, simpler, and more accessible.**
 
-## Get started
+RecyVision is a mobile application that helps users identify waste, understand proper recycling practices, and discover nearby recycling locations. Combining image classification, recycling information, and gamification, the application encourages environmentally responsible behavior and sustainable waste management.
 
-1. Install dependencies
+Developed as an academic project at the **Lucerne University of Applied Sciences and Arts (HSLU)**.
 
-   ```bash
-   npm install
-   ```
+---
 
-2. Start the app
+## ✨ Features
 
-   ```bash
-    npx expo start
-   ```
+- **AI-Powered Recycling Scanner** – Identify waste items using image classification.
+- **Offline Predictions** – Classify waste using an offline prediction model.
+- **Recycling Tips & Information** – Learn how to prepare and dispose of detected items correctly.
+- **Recycling Location Map** – Discover nearby recycling centers and view accepted materials and opening hours.
+- **Recycling Progress Tracker** – Track recycling activity through a calendar and statistics.
+- **Gamification** – Earn points, collect unique items, unlock achievements, and compete on leaderboards.
+- **User Accounts** – Manage account information and application preferences.
+- **Sustainability Awareness** – Encourage responsible waste disposal and environmentally conscious habits.
 
-In the output, you'll find options to open the app in a
+---
 
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
+## 📱 Application Screenshots
 
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
+### 🏠 Home & Account
 
-## Get a fresh project
+<p align="center">
+  <img src="screenshots/Home%20Page.PNG" width="280" alt="RecyVision Home Page" />
+  <img src="screenshots/Account%20Page.PNG" width="280" alt="RecyVision Account Page" />
+</p>
 
-When you're ready, run:
+### 📷 AI Recycling Scanner
+
+<p align="center">
+  <img src="screenshots/Camera%20Page.PNG" width="280" alt="RecyVision Camera Page" />
+  <img src="screenshots/Image%20Confirmation%20Page.PNG" width="280" alt="Image Confirmation Page" />
+</p>
+
+### 🤖 Waste Classification & Predictions
+
+<p align="center">
+  <img src="screenshots/Main%20Model%20Prediction%20Page.PNG" width="280" alt="Main Model Prediction" />
+  <img src="screenshots/Offline%20Model%20Prediction%20Page.PNG" width="280" alt="Offline Model Prediction" />
+</p>
+
+### 🗺️ Recycling Locations
+
+<p align="center">
+  <img src="screenshots/Map%20Page.PNG" width="280" alt="RecyVision Recycling Map" />
+  <img src="screenshots/Map%20Page%20Details%20Page.PNG" width="280" alt="Recycling Location Details" />
+</p>
+
+### 🏆 Gamification & Achievements
+
+<p align="center">
+  <img src="screenshots/Leaderboards%20Page.PNG" width="280" alt="RecyVision Leaderboards" />
+  <img src="screenshots/Unique%20Item%20Achievement%20Page.PNG" width="280" alt="RecyVision Unique Items" />
+</p>
+
+---
+
+## 🛠️ Tech Stack
+
+| Category | Technologies |
+|---|---|
+| Mobile Development | React Native, Expo |
+| Programming Language | TypeScript |
+| Navigation | Expo Router |
+| Backend | Python |
+| Machine Learning | Computer Vision, Image Classification |
+| Database & Services | Firebase |
+| Development Tools | Git, GitHub, VS Code |
+
+---
+
+## 🚀 Getting Started
+
+### Prerequisites
+
+- [Node.js](https://nodejs.org/)
+- npm
+- [Expo](https://expo.dev/)
+- [Git](https://git-scm.com/)
+
+### Installation
+
+Clone the repository:
 
 ```bash
-npm run reset-project
+git clone https://github.com/arvidato/RecyVision.git
+cd RecyVision
 ```
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
+Install dependencies:
 
-## Learn more
+```bash
+npm install
+```
 
-To learn more about developing your project with Expo, look at the following resources:
+Start the Expo development server:
 
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
+```bash
+npx expo start
+```
 
-## Join the community
+Follow the Expo instructions to run the application on an emulator or compatible mobile device.
 
-Join our community of developers creating universal apps.
+> **Note:** Backend services, Firebase integration, and AI prediction functionality may require additional configuration.
 
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+---
+
+## 🌱 Sustainability
+
+RecyVision promotes responsible consumption and waste management by making recycling information more accessible and encouraging sustainable everyday practices.
+
+The project supports the following United Nations Sustainable Development Goals:
+
+- **SDG 12 – Responsible Consumption and Production**
+- **SDG 13 – Climate Action**
+
+---
+
+## 📚 Documentation
+
+Additional project documentation includes:
+
+- Project Management Report
+- User Guide
+- Technical and Implementation Documentation
+
+---
+
+## 🎓 Academic Project
+
+Developed as part of the **Master of Science in IT – Digitalization & Sustainability** at the **Lucerne University of Applied Sciences and Arts (HSLU)**.
+
+---
+
+## 👨‍💻 Author
+
+**Arvi Dato**
+
+Software Developer | Full-Stack Development | AI/ML | Game Development
+
+- GitHub: [@arvidato](https://github.com/arvidato)
+
+---
+
+⭐ Feel free to explore the repository and learn more about RecyVision!
