@@ -1,86 +1,149 @@
 # ♻️ RecyVision
 
-Making recycling smarter, simpler, and more accessible.
+**Making recycling smarter, simpler, and more accessible.**
+
+RecyVision is a mobile recycling application designed to help users identify recyclable waste, understand proper disposal methods, and discover nearby recycling locations. By combining computer vision, recycling information, and gamification, RecyVision encourages sustainable waste management practices and environmental awareness.
+
+Developed as an academic project at the **Lucerne University of Applied Sciences and Arts (HSLU)**.
+
+---
 
 ## ✨ Features
 
-- **AI Recycling Scanner** – Identify waste items using computer vision.
-- **Recycling Guidance** – Receive recycling instructions based on Swiss practices.
-- **Recycling Center Map** – Locate nearby recycling facilities and explore their information.
-- **Recycling Center Information** – View accepted materials, operating hours, and facility details.
-- **Calendar Tracker** – Track recycling activities and scanning history.
-- **Achievements & Gamification** – Track recycling progress and unlock achievements.
-- **Leaderboard** – Compare recycling achievements with other users.
-- **User Accounts** – Manage profiles and recycling history.
+- **AI-Powered Recycling Scanner** – Identify waste items using image-based classification.
+- **Offline Predictions** – Classify waste without requiring an internet connection using an offline model.
+- **Recycling Information** – Access information about detected items and their appropriate disposal methods.
+- **Recycling Location Map** – Explore recycling locations and view additional details about recycling centers.
+- **User Accounts** – Manage your personal account and application profile.
+- **Gamification** – Earn achievements, track unique items, and participate in leaderboards.
+- **Sustainability Awareness** – Encourage responsible waste disposal and sustainable everyday practices.
+
+---
+
+## 📱 Application Screenshots
+
+### Home & Account
+
+<p align="center">
+  <img src="screenshots/Home%20Page.PNG" width="250" alt="RecyVision Home Page" />
+  <img src="screenshots/Account%20Page.PNG" width="250" alt="RecyVision Account Page" />
+</p>
+
+### AI Recycling Scanner
+
+<p align="center">
+  <img src="screenshots/Camera%20Page.PNG" width="250" alt="RecyVision Camera Page" />
+  <img src="screenshots/Main%20Model%20Prediction%20Page.PNG" width="250" alt="Main Model Prediction" />
+</p>
+
+<p align="center">
+  <img src="screenshots/Offline%20Model%20Prediction%20Page.PNG" width="250" alt="Offline Model Prediction" />
+  <img src="screenshots/Image%20Information%20Page.PNG" width="250" alt="Image Information Page" />
+</p>
+
+### Recycling Locations
+
+<p align="center">
+  <img src="screenshots/Map%20Page.PNG" width="250" alt="RecyVision Recycling Map" />
+  <img src="screenshots/Map%20Page%20Details%20Page.PNG" width="250" alt="Recycling Location Details" />
+</p>
+
+### Gamification
+
+<p align="center">
+  <img src="screenshots/Leaderboards%20Page.PNG" width="250" alt="RecyVision Leaderboards" />
+  <img src="screenshots/Unique%20Item%20Achievement%20Page.PNG" width="250" alt="RecyVision Achievements" />
+</p>
+
+---
 
 ## 🛠️ Tech Stack
 
-- React Native
-- Expo
-- Expo Router
-- TypeScript
-- Computer Vision / Machine Learning
-- Google Gemini API
-- Firebase
+| Category | Technologies |
+|---|---|
+| Mobile Development | React Native, Expo |
+| Programming Language | TypeScript |
+| Navigation | Expo Router |
+| Backend | Python |
+| AI / Machine Learning | Computer Vision, Image Classification |
+| Database / Services | Firebase |
+| Development Tools | Git, GitHub, VS Code |
 
-## 📱 Screenshots
-
-<!-- Add application screenshots here -->
+---
 
 ## 🚀 Getting Started
 
 ### Prerequisites
 
-- Node.js (LTS recommended)
-- npm or Yarn
-- Expo Go
-- Android Studio or Xcode (optional for emulators)
+- [Node.js](https://nodejs.org/)
+- npm
+- [Expo](https://expo.dev/)
+- [Git](https://git-scm.com/)
 
 ### Installation
 
-1. Clone the repository:
+Clone the repository:
 
-   ```bash
-   git clone YOUR_REPOSITORY_URL
-   cd RecyVision
-   ```
+```bash
+git clone https://github.com/arvidato/RecyVision.git
+cd RecyVision
+```
 
-2. Install dependencies:
+Install dependencies:
 
-   ```bash
-   npm install
-   ```
+```bash
+npm install
+```
 
-3. Start the Expo development server:
+Start the Expo development server:
 
-   ```bash
-   npx expo start
-   ```
+```bash
+npx expo start
+```
 
-4. Run the application:
-   - Scan the QR code using Expo Go.
-   - Press `a` to launch an Android emulator.
-   - Press `i` to launch an iOS simulator (macOS required).
+Follow the instructions in the terminal to run the application on an emulator or a compatible mobile device.
 
-## 📖 Documentation
+> **Note:** Backend services and AI model functionality may require additional configuration depending on the selected prediction mode.
 
-- [User Guide](docs/User_Guide.pdf)
-- [Management Report](docs/Management_Report.pdf)
-
-## 🎓 Academic Project
-
-Developed as part of the **Managing IT Projects** course at the Lucerne University of Applied Sciences and Arts (HSLU), Spring 2025.
-
-The project followed an Agile Scrum development methodology and consisted of planning and four development sprints.
+---
 
 ## 🌱 Sustainability
 
-RecyVision supports environmental sustainability by promoting proper waste classification and encouraging recycling participation.
+RecyVision contributes to sustainability by promoting responsible waste management and encouraging environmentally conscious behavior.
 
-## 📄 License
+The project aligns with:
 
-This project is licensed under the MIT License. See [LICENSE](LICENSE) for details.
+- **UN Sustainable Development Goal 12 – Responsible Consumption and Production**
+- **UN Sustainable Development Goal 13 – Climate Action**
 
-## 👥 Contributors
+By making recycling information more accessible, RecyVision aims to help users make informed decisions about waste disposal and reduce improper waste management practices.
 
-Developed collaboratively by the RecyVision project team.
+---
+
+## 📚 Project Documentation
+
+Additional project documentation includes:
+
+- Project Management Report
+- User Guide
+- Technical and implementation documentation
+
+---
+
+## 🎓 Academic Project
+
+Developed as part of the **Master of Science in IT – Digitalization & Sustainability** at the **Lucerne University of Applied Sciences and Arts (HSLU)**.
+
+---
+
+## 👨‍💻 Author
+
+**Arvi Dato**
+
+Software Developer | AI/ML | Full-Stack Development | Game Development
+
+- GitHub: [@arvidato](https://github.com/arvidato)
+
+---
+
+⭐ If you find this project interesting, feel free to explore the repository!
